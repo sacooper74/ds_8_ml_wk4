@@ -81,7 +81,10 @@ The accuracy of the decision tree is reasonably good, at `r round(cm_rpart$overa
 We will try to improve with a random forest for the classification:
 
 ```{r rf}
-fit_rf <- randomForest(classe ~ ., data = training)
+controlrf <- trainControl(method="cv", 5)
+
+# fit_rf <- randomForest(classe ~ ., data = training)
+fit_rf <- train(classe ~ ., data = training, method = "rf", trControl = controlrf)
 print(fit_rf)
 
 # prediction via caret
@@ -104,3 +107,4 @@ predict_test
 
 1. Interpretation of RF and Confusion Matrix: https://www.youtube.com/watch?v=dJclNIN-TPo
 2. R Markdown cheatsheet: https://www.rstudio.com/wp-content/uploads/2015/02/rmarkdown-cheatsheet.pdf
+3. The caret package and cross-validation: https://cran.r-project.org/web/packages/caret/vignettes/caret.pdf
