@@ -1,0 +1,106 @@
+---
+title: "Prediction Assignment Writeup"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(caret); library(rpart.plot); library(randomForest)
+```
+
+# Background
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, the goal was to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+Six young health participants were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps Curl in five different fashions: exactly according to the specification (Class A), throwing the elbows to the front (Class B), lifting the dumbbell only halfway (Class C), lowering the dumbbell only halfway (Class D) and throwing the hips to the front (Class E).  Class A corresponds to the specified execution of the exercise, while the other 4 classes correspond to common mistakes. 
+
+The prediciton challenge is to apply the best machine learning algorithm to the 20 test cases available in the test data above and submit predictions in appropriate format to the Course Project Prediction Quiz for automated grading.
+
+## Data
+The training data for this project are available here:
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+The test data are available here:
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+# Load, Clean and Partition the Data
+During the load we will interpret all blanks, "NA" and division errors as "NA" values.  Data preparation will apply two principles:
+
+1. Columns that sum to zero will be removed.
+2. The first 7 columns of the data are master data (related to the user or timestamp) and therefore not relevant for the analysis, these will be removed.
+
+```{r data}
+trainUrl <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+testUrl <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+# All blanks, "NA" and division errors are interpreted as NA values
+training <- read.csv(trainUrl, na.strings=c("NA","#DIV/0!",""))
+testing <- read.csv(testUrl, na.strings=c("NA","#DIV/0!",""))
+
+# delete columns with missing values
+training <- training[, colSums(is.na(training)) == 0]
+testing <- testing[, colSums(is.na(testing)) == 0]
+
+# remove first 7 columns
+training <- training[, -c(1:7)]
+testing <- testing[, -c(1:7)]
+
+# dim(training); dim(testing)
+
+# partition the data
+inTrain <- createDataPartition(training$classe, p=0.7, list = F)
+train <- training[inTrain,]
+validate <- training[-inTrain,]
+```
+
+The final dataset contains training data of `r dim(training)[1]` rows and `r dim(training)[2]` columns.  The test dataset is `r dim(testing)`.  We have partitioned the training data into a training (70%) and validation set (30%).
+
+# Prediction with a Decision Tree
+
+First we'll try using a decision tree to predict `classe`:
+
+```{r rpart}
+set.seed(20012018)
+
+# fit the model
+fit_rpart <- rpart(classe ~ ., data = training, method = "class")
+# note: we could have used the generalized form of caret with train() with method = rpart
+# model fitted on a mac where rattle won't load, will use rpart.plot()
+prp(fit_rpart)
+# for further analysis, but not used in this report for brevity
+# printcp(fit_rpart)
+
+# prediction
+predict_rpart <- predict(fit_rpart, validate, type = "class")
+cm_rpart <- confusionMatrix(predict_rpart, validate$classe)
+cm_rpart
+```
+
+The accuracy of the decision tree is reasonably good, at `r round(cm_rpart$overall['Accuracy'], 4)`.
+
+# Prediction with Random Forest
+
+We will try to improve with a random forest for the classification:
+
+```{r rf}
+fit_rf <- randomForest(classe ~ ., data = training)
+print(fit_rf)
+
+# prediction via caret
+predict_rf <- predict(fit_rf, validate, type = "class")
+cm_rf <- confusionMatrix(predict_rf, validate$classe)
+cm_rf
+# plot(fit_rf)
+```
+
+Based on 500 trees, 7 variables tried at each split (approx. sqrt of the number of variables), the out of bag error estimate rate is 0.3%.  Predictions are good for all classes, all lower than 0.00%.
+
+## Prediction with Test Data
+The random forest outperforms the decision trees with a 100% accuracy of `r cm_rf$overall[1]`.  We will therefore use it to predict the test data.  
+```{r test}
+predict_test <- predict(fit_rf, testing, type = "class")
+predict_test
+```
+
+# Appendix
+
+1. Interpretation of RF and Confusion Matrix: https://www.youtube.com/watch?v=dJclNIN-TPo
+2. R Markdown cheatsheet: https://www.rstudio.com/wp-content/uploads/2015/02/rmarkdown-cheatsheet.pdf
