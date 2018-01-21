@@ -9,7 +9,7 @@ library(caret); library(rpart.plot); library(randomForest)
 
 # Background
 
-Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, the goal was to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset)..
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, the goal was to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
 
 Six young health participants were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps Curl in five different fashions: exactly according to the specification (Class A), throwing the elbows to the front (Class B), lifting the dumbbell only halfway (Class C), lowering the dumbbell only halfway (Class D) and throwing the hips to the front (Class E).  Class A corresponds to the specified execution of the exercise, while the other 4 classes correspond to common mistakes. 
 
@@ -55,14 +55,15 @@ The final dataset contains training data of `r dim(training)[1]` rows and `r dim
 
 # Prediction with a Decision Tree
 
-First we'll try using a decision tree to predict `classe`:
+First we'll try using a decision tree to predict `classe`.  We will cross-validate in order to sub-sample the training data, avoid overfitting and make the predictions generalizable:
 
 ```{r rpart}
-set.seed(20012018)
+set.seed(121)
+control_rpart <- rpart.control(xval = 5)
 
-# fit the model
-fit_rpart <- rpart(classe ~ ., data = training, method = "class")
-# note: we could have used the generalized form of caret with train() with method = rpart
+# fit the model, cross-validated 5 times
+fit_rpart <- rpart(classe ~ ., data = training, method = "class", control = control_rpart)
+# note: we could have used caret
 # model fitted on a mac where rattle won't load, will use rpart.plot()
 prp(fit_rpart)
 # for further analysis, but not used in this report for brevity
@@ -78,13 +79,14 @@ The accuracy of the decision tree is reasonably good, at `r round(cm_rpart$overa
 
 # Prediction with Random Forest
 
-We will try to improve with a random forest for the classification:
+We will try to improve with a random forest for the classification.  We will cross-validate in order to sub-sample the training data, avoid overfitting and make the predictions generalizable.  In addition, cross-validation will let us estimate how well the predictive function will work on the test dataset.
 
 ```{r rf}
-controlrf <- trainControl(method="cv", 5)
+control_rf <- trainControl(method="cv", number = 5, verboseIter = T)
 
-# fit_rf <- randomForest(classe ~ ., data = training)
-fit_rf <- train(classe ~ ., data = training, method = "rf", trControl = controlrf)
+fit_rf <- randomForest(classe ~ ., data = training)
+# Here is the code for model training with RF and cross validation, however it wouldn't complete on my machine
+# fit_rf <- train(classe ~ ., data = training, method = "rf", trControl = control_rf)
 print(fit_rf)
 
 # prediction via caret
@@ -108,3 +110,5 @@ predict_test
 1. Interpretation of RF and Confusion Matrix: https://www.youtube.com/watch?v=dJclNIN-TPo
 2. R Markdown cheatsheet: https://www.rstudio.com/wp-content/uploads/2015/02/rmarkdown-cheatsheet.pdf
 3. The caret package and cross-validation: https://cran.r-project.org/web/packages/caret/vignettes/caret.pdf
+4. Cross-validation in R: https://www.youtube.com/watch?v=OwPQHmiJURI
+5. Cross-validation Coursera: https://www.youtube.com/watch?v=CmEqvD_ov2o
