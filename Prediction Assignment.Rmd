@@ -62,7 +62,7 @@ set.seed(121)
 control_rpart <- rpart.control(xval = 5)
 
 # fit the model, cross-validated 5 times
-fit_rpart <- rpart(classe ~ ., data = training, method = "class", control = control_rpart)
+fit_rpart <- rpart(classe ~ ., data = train, method = "class", control = control_rpart)
 # note: we could have used caret
 # model fitted on a mac where rattle won't load, will use rpart.plot()
 prp(fit_rpart)
@@ -83,10 +83,11 @@ We will try to improve with a random forest for the classification.  We will cro
 
 ```{r rf}
 control_rf <- trainControl(method="cv", number = 5, verboseIter = T)
+# train with cv enabled
+# fit_rf <- train(classe ~ ., data = train, method = "rf", trControl = control_rf)
+# train without cv
+fit_rf <- randomForest(classe ~ ., data = train)
 
-fit_rf <- randomForest(classe ~ ., data = training)
-# Here is the code for model training with RF and cross validation, however it wouldn't complete on my machine
-# fit_rf <- train(classe ~ ., data = training, method = "rf", trControl = control_rf)
 print(fit_rf)
 
 # prediction via caret
@@ -96,10 +97,10 @@ cm_rf
 # plot(fit_rf)
 ```
 
-Based on 500 trees, 7 variables tried at each split (approx. sqrt of the number of variables), the out of bag error estimate rate is 0.3%.  Predictions are good for all classes, all lower than 0.00%.
+Based on 500 trees, 7 variables tried at each split (approx. sqrt of the number of variables), the out of bag error estimate rate is 0.3%.  Predictions are good for all classes.
 
 ## Prediction with Test Data
-The random forest outperforms the decision trees with a 100% accuracy of `r cm_rf$overall[1]`.  We will therefore use it to predict the test data.  
+The random forest outperforms the decision trees with accuracy of `r cm_rf$overall[1]`.  We will therefore use it to predict the test data.  
 ```{r test}
 predict_test <- predict(fit_rf, testing, type = "class")
 predict_test
