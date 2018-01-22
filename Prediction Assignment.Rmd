@@ -84,14 +84,14 @@ We will try to improve with a random forest for the classification.  We will cro
 ```{r rf}
 control_rf <- trainControl(method="cv", number = 5, verboseIter = T)
 # train with cv enabled
-# fit_rf <- train(classe ~ ., data = train, method = "rf", trControl = control_rf)
+fit_rf <- train(classe ~ ., data = train, method = "rf", trControl = control_rf)
 # train without cv
-fit_rf <- randomForest(classe ~ ., data = train)
+# fit_rf <- randomForest(classe ~ ., data = train)
 
 print(fit_rf)
 
 # prediction via caret
-predict_rf <- predict(fit_rf, validate, type = "class")
+predict_rf <- predict(fit_rf, validate)
 cm_rf <- confusionMatrix(predict_rf, validate$classe)
 cm_rf
 # plot(fit_rf)
@@ -113,3 +113,4 @@ predict_test
 3. The caret package and cross-validation: https://cran.r-project.org/web/packages/caret/vignettes/caret.pdf
 4. Cross-validation in R: https://www.youtube.com/watch?v=OwPQHmiJURI
 5. Cross-validation Coursera: https://www.youtube.com/watch?v=CmEqvD_ov2o
+6. For the future, PCA: https://www.r-bloggers.com/computing-and-visualizing-pca-in-r/
